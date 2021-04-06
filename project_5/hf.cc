@@ -13,7 +13,7 @@ using namespace std;
 void hf::fock_procedure()
 {
 	//Print enuc and Hcore in a nice table
-	cout << fixed;
+//	cout << fixed;
 
 	cout << "enuc" << "\n";
 	cout << enuc << "\n \n";
