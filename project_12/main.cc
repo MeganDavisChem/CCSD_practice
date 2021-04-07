@@ -9,7 +9,7 @@ using namespace std;
 int main()
 {
 	//molecule name, basis set, nelec, e conv, rms conv
-	hf fock("h2o", "STO-3G", 10, 1e-10, 1e-10);
+	hf fock("h2o", "DZ", 10, 1e-10, 1e-10);
 	fock.fock_procedure(); 
 //	fock.mp2_proc();
 	//Econv and RMS conv
