@@ -20,13 +20,33 @@ int main()
 
 	//MO transformation
 //	fock.mo_fock();
-//	fock.smarty();
-	fock.noddy();
-	fock.spin_orbit_CI();
-	fock.spin_mo_fock();
+	fock.smarty();
+//	fock.noddy();
 
+//	Pick spin orbits
+//	fock.spin_orbit();
+
+
+
+	//Pick CI (match w/ orbits)
 //	fock.CI();
+
+//	fock.spin_orbit();
+//	fock.spin_mo_fock();
+
+	fock.spin_orbit_CI();
+//	fock.spin_orbit_CI();
 	fock.CI_spin();
+
+	//mo_fock after spin orbit
+//
+
+
+//fock.spin_orbit();
+
+	//RPA
+//	fock.RPA();
+	fock.RPA_reduced();
 
 
 	return 0;

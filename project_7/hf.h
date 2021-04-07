@@ -87,6 +87,8 @@ class hf
 		//CI variables
 		Matrix HCI;
 		Matrix HCI_spin;
+		Matrix HRPA;
+		Matrix HRPA_reduced;
 	
 
 		//Individual functions
@@ -127,6 +129,10 @@ class hf
 		//CI
 		void CI();
 		void CI_spin();
+
+		//RPA
+		void RPA();
+		void RPA_reduced();
 
 
 		//Creation and annihiliation

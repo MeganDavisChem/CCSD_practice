@@ -530,6 +530,36 @@ void hf::spin_orbit_CI()
 					value1 = TEI_MO[prqs] * (p%2 == r%2) * (q%2 == s%2);
 					ints[p][q][r][s] = value1;
 				}
+
+
+	//spin_MO fock part
+	Matrix mo_H(orbitals,orbitals);
+	for(int i=0; i < orbitals; i++)
+	{
+		for(int j=0; j < orbitals; j++)
+		{
+			mo_H(i,j) = 0;
+			for(int k=0;  k < orbitals; k++)
+			{
+				for(int l=0; l < orbitals; l++)
+				{
+					mo_H(i,j) += C(k,j) * C(l,i) * Hcore(k,l);
+				}
+			}
+		}
+	}
+
+	for(int p=0; p < nmo; p++)
+	{
+		for(int q=0; q < nmo; q++)
+		{
+			smo_F[p][q] = mo_H(p/2,q/2)*(p%2 == q%2);
+			for(int m=0; m < nelec; m++)
+			{
+				smo_F[p][q] += ints[p][m][q][m] - ints[p][m][m][q];
+			}
+		}
+	}
 }
 
 
@@ -1111,8 +1141,8 @@ void hf::CI_spin()
 	Matrix CIS_E = solver.eigenvalues();
 
 
-	cout << "~~CIS~~" << endl;
-	cout << "Excitation energies:" << endl;
+	cout << "\n~~Spin-Adapted CIS~~"<< endl;
+	cout << "Excitation energies (Hartree):" << endl;
 	cout << "Singlets:" << endl;
 	cout << CIS_E << endl;
 
@@ -1138,6 +1168,79 @@ void hf::CI_spin()
 	cout << "Triplets:" << endl;
 	cout << CIS_E << endl;
 
+}
+
+
+void hf::RPA()
+{
+
+	//Calculate how much to adjust position for B and A-
+	int vert = nmo - nelec;
+	int vn = vert*nelec;
+
+	int	count = 0;
+	for(int i=0; i < nelec; i++)
+		for(int a=nelec; a < nmo; a++)
+		{
+			int ia = count;
+			count++;
+			int countb = 0;
+			for(int j=0; j < nelec; j++)
+				for(int b=nelec; b < nmo; b++)
+				{
+					int jb = countb;
+					//A matrix
+					//So <aj||ib> = <aj|ib> - <ab|ji>
+					HRPA(ia,jb) = smo_F[a][b]*(i==j) - smo_F[i][j]*(a==b) + ints[a][j][i][b] - ints[a][j][b][i];
+					//-A
+					HRPA(ia+vn,jb+vn) = -HRPA(ia,jb);
+					//B
+					HRPA(ia,jb+vn) = -ints[a][b][i][j] + ints[a][b][j][i];
+					//-B
+					HRPA(ia+vn,jb) = -HRPA(ia,jb+vn);
+					countb++;
+				}
+		}
+
+	//Figure out printing later
+	cout << "\n~~TDHF/RPA~~" << endl;
+	cout << HRPA.eigenvalues().real() << endl;
+
+}
+
+void hf::RPA_reduced()
+{
+	int vert = nmo - nelec;
+	int vn = vert*nelec;
+	Matrix A(vn,vn);
+	Matrix B(vn,vn);
+	int	count = 0;
+	for(int i=0; i < nelec; i++)
+		for(int a=nelec; a < nmo; a++)
+		{
+			int ia = count;
+			count++;
+			int countb = 0;
+			for(int j=0; j < nelec; j++)
+				for(int b=nelec; b < nmo; b++)
+				{
+					int jb = countb;
+					A(ia,jb) = smo_F[a][b]*(i==j) - smo_F[i][j]*(a==b) + ints[a][j][i][b] - ints[a][j][b][i];
+					B(ia,jb) = ints[a][b][i][j] - ints[a][b][j][i];
+					countb++;
+				}
+		}
+	HRPA_reduced = (A + B)*(A-B);
+	cout << "\n~~TDHF/RPA~~" << endl;
+	Matrix rip = HRPA_reduced.eigenvalues().real().array().sqrt();
+	vector<double> v(vn);
+//	Matrix rip = HRPA_reduced.eigenvalues().real().array().sqrt();
+	for(int i=0; i < vn; i++)
+		v[i] = rip(i);
+	sort(v.begin(), v.end());
+	cout << "Excitation energies (Hartree)" << endl;
+	for(int i=0; i < vn; i++)
+		cout << v[i] << endl;
 }
 
 hf::hf(string mol, string basis, int elec, double e_conv_crit_input, double rms_conv_crit_input)
@@ -1415,6 +1518,10 @@ hf::hf(string mol, string basis, int elec, double e_conv_crit_input, double rms_
 	int vn_spat = vert_spat * (nelec/2);	
 	HCI.resize(vn,vn);
 	HCI_spin.resize(vn_spat,vn_spat);
+
+	//RPA
+	HRPA.resize(vn*2,vn*2);
+	HRPA_reduced.resize(vn,vn);
 }
 
 hf::~hf()
